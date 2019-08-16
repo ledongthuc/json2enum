@@ -1,9 +1,11 @@
 package json2enum
 
 import (
+	"bytes"
 	"io"
-	"io/ioutil"
+	"strings"
 
+	"github.com/antchfx/jsonquery"
 	"github.com/pkg/errors"
 )
 
@@ -24,15 +26,15 @@ var (
 )
 
 // Convert json to enum bases on reader stream. Returned reader's always nil when has error.
-func Convert(r io.Reader) (io.Reader, err) {
+func Convert(r io.Reader) (io.Reader, error) {
 	return NewWithDefaultSetting().Convert(r)
 }
 
-func ConvertFromBytes(data []byte) (io.Reader, err) {
+func ConvertFromBytes(data []byte) (io.Reader, error) {
 	return NewWithDefaultSetting().ConvertFromBytes(data)
 }
 
-func ConvertFromString(data string) (io.Reader, err) {
+func ConvertFromString(data string) (io.Reader, error) {
 	return NewWithDefaultSetting().ConvertFromString(data)
 }
 
@@ -59,18 +61,29 @@ func (c Converter) SetDefault() {
 	c.CustomPackageName = "json2enum"
 }
 
-func (c Converter) Convert(r io.Reader) (io.Reader, err) {
-	data, err := ioutil.ReadAll()
+func (c Converter) Convert(r io.Reader) (io.Reader, error) {
+	doc, err := jsonquery.Parse(r)
 	if err != nil {
-		return nil, errors.Wrap(err, ErrorCantReadData)
+		return nil, errors.Wrap(err, "Error when load data")
 	}
-	return c.ConvertFromBytes(data)
+	list := jsonquery.Find(doc, c.PathToArray)
+	var b bytes.Buffer
+	for _, item := range list {
+		if item == nil {
+			continue
+		}
+		_, err := b.WriteString(item.InnerText())
+		if err != nil {
+			return nil, errors.Wrap(err, "Can't write response")
+		}
+	}
+	return bytes.NewReader(b.Bytes()), nil
 }
 
-func (c Converter) ConvertFromBytes(data []byte) (io.Reader, err) {
-	return c.ConvertFromString(data)
+func (c Converter) ConvertFromBytes(data []byte) (io.Reader, error) {
+	return c.Convert(bytes.NewBuffer(data))
 }
 
-func (c Converter) ConvertFromString(data string) (io.Reader, err) {
-	return nil, errors.New("Under construction!")
+func (c Converter) ConvertFromString(data string) (io.Reader, error) {
+	return c.Convert(strings.NewReader(data))
 }
