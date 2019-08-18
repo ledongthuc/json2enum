@@ -2,11 +2,14 @@ package json2enum
 
 import (
 	"bytes"
+	"fmt"
+	"html/template"
 	"io"
+	"io/ioutil"
 	"strings"
 
-	"github.com/antchfx/jsonquery"
 	"github.com/pkg/errors"
+	"github.com/tidwall/gjson"
 )
 
 // [ ] take Json array
@@ -17,12 +20,18 @@ import (
 // [ ] Support string and object
 // [ ] Support enum Prefix
 // [ ] Support package custom
+// [ ] Format output
+// [ ] Support special unicode characters like !@#$ to texable Variable name
 
 // Lib: https://github.com/antchfx/jsonquery
 // Lib: https://github.com/stretchr/objx
+// Lib: https://golang.org/src/go/format/format.go?s=3141:3180#L81
 
 var (
-	ErrorCantReadData = errors.New("Can't read stream json data")
+	ErrorCantReadData       = errors.New("Can't read stream json data")
+	ErrorInvalidArrayToPath = errors.New("Array's path is not valid value. If json data is array of string, you can use '#()#'")
+	ErrorInvalidTypeName    = errors.New("Type name is not valid.")
+	ErrorInvalidPackageName = errors.New("Package name is not valid.")
 )
 
 // Convert json to enum bases on reader stream. Returned reader's always nil when has error.
@@ -39,45 +48,87 @@ func ConvertFromString(data string) (io.Reader, error) {
 }
 
 type Converter struct {
-	PathToArray       string
-	EnumPrefix        string
-	CustomPackageName string
+	PathToArray string
+	EnumPrefix  string
+	TypeName    string
+	PackageName string
 }
 
+// New will create a instance of Converter, that's useful for adding custom value to generate.
 func New() Converter {
 	var c Converter
 	return c
 }
 
+// NewWithDefaultSetting will create a instance of Converter, that's useful for adding custom value to generate.
 func NewWithDefaultSetting() Converter {
 	c := New()
 	c.SetDefault()
 	return c
 }
 
-func (c Converter) SetDefault() {
-	c.PathToArray = "//"
+// SetDefault set input data with default values. It's used for run without entering any custom configuration to generate source code.
+func (c *Converter) SetDefault() {
+	c.PathToArray = "#()#"
 	c.EnumPrefix = ""
-	c.CustomPackageName = "json2enum"
+	c.TypeName = "MyType"
+	c.PackageName = "json2enum"
+}
+
+// IsValid validates input data before converting it to source file.
+func (c *Converter) IsValid() (bool, error) {
+	if c.PathToArray == "" {
+		return false, ErrorInvalidArrayToPath
+	}
+	if c.TypeName == "" {
+		return false, ErrorInvalidTypeName
+	}
+	if c.PackageName == "" {
+		return false, ErrorInvalidPackageName
+	}
+	return true, nil
 }
 
 func (c Converter) Convert(r io.Reader) (io.Reader, error) {
-	doc, err := jsonquery.Parse(r)
+	if valid, err := c.IsValid(); !valid {
+		return nil, err
+	}
+	json, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error when load data")
 	}
-	list := jsonquery.Find(doc, c.PathToArray)
-	var b bytes.Buffer
-	for _, item := range list {
-		if item == nil {
+
+	// Prepare parameters
+	tmplParameters := TemplateParameters{Type: c.TypeName}
+	tmplParameters.GenerateTypeSingular()
+	tmplParameters.GenerateTypePlural()
+	fields := gjson.GetBytes(json, c.PathToArray)
+	for _, item := range fields.Array() {
+		if item.Type == gjson.Null {
 			continue
 		}
-		_, err := b.WriteString(item.InnerText())
-		if err != nil {
-			return nil, errors.Wrap(err, "Can't write response")
-		}
+
+		tmplParameters.Fields = append(tmplParameters.Fields, TemplateField{
+			Name:  item.String(), // TODO: Support field name valid
+			Value: item.String(),
+		})
 	}
-	return bytes.NewReader(b.Bytes()), nil
+
+	// Generate source code
+	tmpl, err := template.New("template").Parse(json2constTemplate)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error when parsing template")
+	}
+
+	result := new(bytes.Buffer)
+	err = tmpl.Execute(result, tmplParameters)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error when generate source code")
+	}
+	a := result.Bytes()
+	fmt.Println("DEBUG: ", string(a))
+	return nil, errors.New("Test")
+	return result, nil
 }
 
 func (c Converter) ConvertFromBytes(data []byte) (io.Reader, error) {
