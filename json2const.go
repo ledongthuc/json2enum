@@ -3,11 +3,13 @@ package json2enum
 import (
 	"bytes"
 	"fmt"
-	"html/template"
+	"go/format"
 	"io"
 	"io/ioutil"
 	"strings"
+	"text/template"
 
+	"github.com/iancoleman/strcase"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
 )
@@ -99,7 +101,10 @@ func (c Converter) Convert(r io.Reader) (io.Reader, error) {
 	}
 
 	// Prepare parameters
-	tmplParameters := TemplateParameters{Type: c.TypeName}
+	tmplParameters := TemplateParameters{
+		PackageName: c.PackageName,
+		Type:        c.TypeName,
+	}
 	tmplParameters.GenerateTypeSingular()
 	tmplParameters.GenerateTypePlural()
 	fields := gjson.GetBytes(json, c.PathToArray)
@@ -109,7 +114,7 @@ func (c Converter) Convert(r io.Reader) (io.Reader, error) {
 		}
 
 		tmplParameters.Fields = append(tmplParameters.Fields, TemplateField{
-			Name:  item.String(), // TODO: Support field name valid
+			Name:  fmt.Sprintf("%s%s", c.EnumPrefix, strcase.ToCamel(item.String())), // TODO: Support field name valid
 			Value: item.String(),
 		})
 	}
@@ -125,7 +130,11 @@ func (c Converter) Convert(r io.Reader) (io.Reader, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Error when generate source code")
 	}
-	a := result.Bytes()
+	a, err := format.Source(result.Bytes())
+	if err != nil {
+		fmt.Println("DEBUG: ", string(result.Bytes()))
+		return nil, errors.Wrap(err, "Error when format generated code")
+	}
 	fmt.Println("DEBUG: ", string(a))
 	return nil, errors.New("Test")
 	return result, nil

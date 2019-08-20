@@ -2,21 +2,20 @@ package json2enum
 
 import "github.com/jinzhu/inflection"
 
-const json2constTemplate = `
-package {.PackageName}
+const json2constTemplate = `package {{.PackageName}}
 
 type {{.TypeSingular}} string
-type {{.TypePlural}}s []{.TypeSingular}
+type {{.TypePlural}} []{{.TypeSingular}}
 
 const (
-	{{range $index, $field := .Fields}}
-		{{$field.Name}} = {{$field.Value | printf "%s"}}
+	{{- range $index, $field := .Fields}}
+		{{$field.Name}} = {{$field.Value | printf "\"%s\"" -}}
 	{{end}}
 )
 
 var {{.TypePlural}}List = {{.TypePlural}}{
-	{{range $index, $field := .Fields}}
-		{{$field.Name}},
+	{{- range $index, $field := .Fields}}
+		{{$field.Name | printf "%s," -}}
 	{{end}}
 }
 
@@ -24,9 +23,9 @@ func (t {{.TypeSingular}}) ToPointer() *{{.TypeSingular}} {
 	return &t
 }
 
-func (t *{{.TypeSingular}}) Value() {.TypeSingular} {
+func (t *{{.TypeSingular}}) Value() {{.TypeSingular}} {
 	if t == nil {
-		return {.TypeSingular}{}
+		return {{.TypeSingular}}{}
 	}
 
 	return *t
@@ -34,6 +33,7 @@ func (t *{{.TypeSingular}}) Value() {.TypeSingular} {
 `
 
 type TemplateParameters struct {
+	PackageName  string
 	Type         string
 	TypeSingular string
 	TypePlural   string

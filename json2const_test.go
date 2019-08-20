@@ -22,12 +22,12 @@ func TestConverter_ConvertFromString(t *testing.T) {
 			name: "root path",
 			converter: Converter{
 				PathToArray: "#()#",
-				EnumPrefix:  "",
-				TypeName:    "Category",
-				PackageName: "test",
+				EnumPrefix:  "Cate",
+				TypeName:    "MyCategory",
+				PackageName: "mypackage",
 			},
 			args: args{
-				data: `["a", "b", "c"]`,
+				data: `["stock", "bond", "real estate", "bitcoin & digital coins"]`,
 			},
 			want:     `abc`,
 			hasError: false,
