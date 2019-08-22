@@ -14,16 +14,13 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// [ ] take Json array
-// [ ] array path can be define path
-// [ ] loop through array
-// [ ] get field and break it as enum
 // [ ] Support function to get back json object wrapper
 // [ ] Support string and object
 // [ ] Support enum Prefix
 // [ ] Support package custom
 // [ ] Format output
 // [ ] Support special unicode characters like !@#$ to texable Variable name
+// [ ] Write template to generate unit test
 
 // Lib: https://github.com/antchfx/jsonquery
 // Lib: https://github.com/stretchr/objx
@@ -116,6 +113,7 @@ func (c Converter) Convert(r io.Reader) (io.Reader, error) {
 		tmplParameters.Fields = append(tmplParameters.Fields, TemplateField{
 			Name:  fmt.Sprintf("%s%s", c.EnumPrefix, strcase.ToCamel(item.String())), // TODO: Support field name valid
 			Value: item.String(),
+			Raw:   item.Raw,
 		})
 	}
 

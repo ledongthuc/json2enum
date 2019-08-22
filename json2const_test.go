@@ -32,6 +32,20 @@ func TestConverter_ConvertFromString(t *testing.T) {
 			want:     `abc`,
 			hasError: false,
 		},
+		{
+			name: "object with field",
+			converter: Converter{
+				PathToArray: "#.name",
+				EnumPrefix:  "Cate",
+				TypeName:    "MyCategory",
+				PackageName: "mypackage",
+			},
+			args: args{
+				data: `[{"name":"stock"},{"name":"bond"},{"name":"real estate"},{"name":"bitcoin & digital coins"}]`,
+			},
+			want:     `abc`,
+			hasError: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

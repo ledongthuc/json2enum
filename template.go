@@ -9,6 +9,7 @@ type {{.TypePlural}} []{{.TypeSingular}}
 
 const (
 	{{- range $index, $field := .Fields}}
+		{{$field.Raw}} 
 		{{$field.Name}} = {{$field.Value | printf "\"%s\"" -}}
 	{{end}}
 )
@@ -43,6 +44,7 @@ type TemplateParameters struct {
 type TemplateField struct {
 	Name  string
 	Value string
+	Raw   string
 }
 
 type TemplateFields []TemplateField
