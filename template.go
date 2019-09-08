@@ -9,14 +9,13 @@ type {{.TypePlural}} []{{.TypeSingular}}
 
 const (
 	{{- range $index, $field := .Fields}}
-		{{$field.Raw}} 
-		{{$field.Name}} = {{$field.Value | printf "\"%s\"" -}}
-	{{end}}
+	{{$field.Name}} = {{$field.Value | printf "\"%s\"" -}}
+	{{end -}}
 )
 
 var {{.TypePlural}}List = {{.TypePlural}}{
 	{{- range $index, $field := .Fields}}
-		{{$field.Name | printf "%s," -}}
+	{{$field.Name | printf "%s," -}}
 	{{end}}
 }
 

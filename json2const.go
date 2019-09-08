@@ -128,14 +128,18 @@ func (c Converter) Convert(r io.Reader) (io.Reader, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Error when generate source code")
 	}
-	a, err := format.Source(result.Bytes())
+
+	// Format source code
+	formatedResult, err := format.Source(result.Bytes())
 	if err != nil {
-		fmt.Println("DEBUG: ", string(result.Bytes()))
 		return nil, errors.Wrap(err, "Error when format generated code")
 	}
-	fmt.Println("DEBUG: ", string(a))
-	return nil, errors.New("Test")
-	return result, nil
+	formatedBuffer := new(bytes.Buffer)
+	_, err = formatedBuffer.Write(formatedResult)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error when format generated code")
+	}
+	return formatedBuffer, nil
 }
 
 func (c Converter) ConvertFromBytes(data []byte) (io.Reader, error) {

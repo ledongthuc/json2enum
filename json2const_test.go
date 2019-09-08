@@ -22,21 +22,50 @@ func TestConverter_ConvertFromString(t *testing.T) {
 			name: "root path",
 			converter: Converter{
 				PathToArray: "#()#",
-				EnumPrefix:  "Cate",
+				EnumPrefix:  "Category",
 				TypeName:    "MyCategory",
 				PackageName: "mypackage",
 			},
 			args: args{
 				data: `["stock", "bond", "real estate", "bitcoin & digital coins"]`,
 			},
-			want:     `abc`,
+			want: `package mypackage
+
+type MyCategory string
+type MyCategories []MyCategory
+
+const (
+	CategoryStock               = "stock"
+	CategoryBond                = "bond"
+	CategoryRealEstate          = "real estate"
+	CategoryBitcoinDigitalCoins = "bitcoin & digital coins"
+)
+
+var MyCategoriesList = MyCategories{
+	CategoryStock,
+	CategoryBond,
+	CategoryRealEstate,
+	CategoryBitcoinDigitalCoins,
+}
+
+func (t MyCategory) ToPointer() *MyCategory {
+	return &t
+}
+
+func (t *MyCategory) Value() MyCategory {
+	if t == nil {
+		return MyCategory{}
+	}
+
+	return *t
+}`,
 			hasError: false,
 		},
 		{
 			name: "object with field",
 			converter: Converter{
 				PathToArray: "#.name",
-				EnumPrefix:  "Cate",
+				EnumPrefix:  "Category",
 				TypeName:    "MyCategory",
 				PackageName: "mypackage",
 			},
