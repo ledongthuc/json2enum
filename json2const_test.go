@@ -58,7 +58,8 @@ func (t *MyCategory) Value() MyCategory {
 	}
 
 	return *t
-}`,
+}
+`,
 			hasError: false,
 		},
 		{
@@ -72,7 +73,37 @@ func (t *MyCategory) Value() MyCategory {
 			args: args{
 				data: `[{"name":"stock"},{"name":"bond"},{"name":"real estate"},{"name":"bitcoin & digital coins"}]`,
 			},
-			want:     `abc`,
+			want: `package mypackage
+
+type MyCategory string
+type MyCategories []MyCategory
+
+const (
+	CategoryStock               = "stock"
+	CategoryBond                = "bond"
+	CategoryRealEstate          = "real estate"
+	CategoryBitcoinDigitalCoins = "bitcoin & digital coins"
+)
+
+var MyCategoriesList = MyCategories{
+	CategoryStock,
+	CategoryBond,
+	CategoryRealEstate,
+	CategoryBitcoinDigitalCoins,
+}
+
+func (t MyCategory) ToPointer() *MyCategory {
+	return &t
+}
+
+func (t *MyCategory) Value() MyCategory {
+	if t == nil {
+		return MyCategory{}
+	}
+
+	return *t
+}
+`,
 			hasError: false,
 		},
 	}
@@ -89,7 +120,7 @@ func (t *MyCategory) Value() MyCategory {
 				t.Errorf("Can't read data at: %s", errf)
 				return
 			}
-			if !reflect.DeepEqual(string(got), tt.want) {
+			if !reflect.DeepEqual((string(got)), (tt.want)) {
 				t.Errorf("Converter.ConvertFromString() got = %v, want %v", string(got), tt.want)
 			}
 		})
