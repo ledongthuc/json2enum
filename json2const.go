@@ -16,9 +16,9 @@ import (
 
 // [ ] Support function to get back json object wrapper
 // [ ] Support string and object
-// [ ] Support enum Prefix
-// [ ] Support package custom
-// [ ] Format output
+// [x] Support enum Prefix
+// [x] Support package custom
+// [x] Format output
 // [ ] Support special unicode characters like !@#$ to texable Variable name
 // [ ] Write template to generate unit test
 
